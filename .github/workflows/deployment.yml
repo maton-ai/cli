@@ -213,6 +213,7 @@ jobs:
           repositories: |
             cli-internal
             cli.maton.ai
+            homebrew-cli
       - name: Checkout cli-internal source
         uses: actions/checkout@v6
         with:
@@ -332,6 +333,71 @@ jobs:
           if [ "$DO_PUBLISH" = "true" ]; then
             git push
           else
+            git log --oneline @{upstream}..
+            git diff --name-status @{upstream}..
+          fi
+      - name: Update homebrew-cli tap
+        if: contains(inputs.platforms, 'macos')
+        env:
+          DO_PUBLISH: ${{ inputs.environment == 'production' && !contains(inputs.tag_name, '-') }}
+          TAG_NAME: ${{ inputs.tag_name }}
+          GH_TOKEN: ${{ steps.cross_repo_token.outputs.token }}
+          GIT_COMMITTER_NAME: maton automation
+          GIT_AUTHOR_NAME: maton automation
+          GIT_COMMITTER_EMAIL: noreply@maton.ai
+          GIT_AUTHOR_EMAIL: noreply@maton.ai
+        run: |
+          set -euo pipefail
+          VERSION="${TAG_NAME#v}"
+          ARM64_ZIP="dist/maton_${VERSION}_macOS_arm64.zip"
+          AMD64_ZIP="dist/maton_${VERSION}_macOS_amd64.zip"
+          ARM64_SHA=$(shasum -a 256 "$ARM64_ZIP" | awk '{print $1}')
+          AMD64_SHA=$(shasum -a 256 "$AMD64_ZIP" | awk '{print $1}')
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/maton-ai/homebrew-cli.git" tap
+          mkdir -p tap/Formula
+          cat > tap/Formula/maton.rb <<EOF
+          class Maton < Formula
+            desc "Maton's official command line tool"
+            homepage "https://maton.ai"
+            version "${VERSION}"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/maton-ai/cli/releases/download/${TAG_NAME}/maton_${VERSION}_macOS_arm64.zip"
+                sha256 "${ARM64_SHA}"
+              end
+              on_intel do
+                url "https://github.com/maton-ai/cli/releases/download/${TAG_NAME}/maton_${VERSION}_macOS_amd64.zip"
+                sha256 "${AMD64_SHA}"
+              end
+            end
+
+            def install
+              bin.install "bin/maton"
+              man1.install Dir["share/man/man1/maton*.1"]
+              (bash_completion/"maton").write Utils.safe_popen_read(bin/"maton", "completion", "-s", "bash")
+              (zsh_completion/"_maton").write Utils.safe_popen_read(bin/"maton", "completion", "-s", "zsh")
+              (fish_completion/"maton.fish").write Utils.safe_popen_read(bin/"maton", "completion", "-s", "fish")
+            end
+
+            test do
+              system "#{bin}/maton", "--version"
+            end
+          end
+          EOF
+
+          cd tap
+          git add Formula/maton.rb
+          if git diff --quiet --cached; then
+            echo "Formula unchanged, skipping commit"
+            exit 0
+          fi
+          git commit -m "maton ${VERSION}"
+          if [ "$DO_PUBLISH" = "true" ]; then
+            git push
+          else
+            echo "(staging) would push:"
             git log --oneline @{upstream}..
             git diff --name-status @{upstream}..
           fi
