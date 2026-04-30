@@ -364,7 +364,11 @@ jobs:
           fi
           git -C public-cli commit -m "maton ${TAG_NAME#v}"
           if [ "$DO_PUBLISH" = "true" ]; then
-            git -C public-cli push
+            for i in 1 2 3; do
+              git -C public-cli push && break
+              echo "push rejected, rebasing on remote (attempt $i)"
+              git -C public-cli pull --rebase
+            done
           else
             echo "(staging) would push:"
             git -C public-cli log --oneline @{upstream}..
@@ -401,7 +405,11 @@ jobs:
         working-directory: ./site
         run: |
           if [ "$DO_PUBLISH" = "true" ]; then
-            git push
+            for i in 1 2 3; do
+              git push && break
+              echo "push rejected, rebasing on remote (attempt $i)"
+              git pull --rebase
+            done
           else
             git log --oneline @{upstream}..
             git diff --name-status @{upstream}..
@@ -465,7 +473,11 @@ jobs:
           fi
           git commit -m "maton ${VERSION}"
           if [ "$DO_PUBLISH" = "true" ]; then
-            git push
+            for i in 1 2 3; do
+              git push && break
+              echo "push rejected, rebasing on remote (attempt $i)"
+              git pull --rebase
+            done
           else
             echo "(staging) would push:"
             git log --oneline @{upstream}..
