@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Email Maton support
+    about: For general questions about using Maton CLI, contact the Maton team.
+    url: mailto:support@maton.ai
