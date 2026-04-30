@@ -261,6 +261,76 @@ jobs:
         with:
           subject-path: "dist/maton_*"
           create-storage-record: false # (default: true)
+      - name: Set up Node.js for npm publish
+        if: inputs.environment == 'production'
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+      - name: Stage npm binaries
+        if: inputs.environment == 'production'
+        env:
+          TAG_NAME: ${{ inputs.tag_name }}
+        run: |
+          set -euo pipefail
+          VERSION="${TAG_NAME#v}"
+          rm -rf binaries
+          mkdir -p binaries
+
+          extract_unix() {
+            local archive="$1" plat="$2" tmp
+            tmp=$(mktemp -d)
+            case "$archive" in
+              *.tar.gz) tar -xzf "$archive" -C "$tmp" ;;
+              *.zip)    unzip -q "$archive" -d "$tmp" ;;
+            esac
+            mkdir -p "binaries/$plat"
+            cp "$(find "$tmp" -type f -path '*/bin/maton')" "binaries/$plat/maton"
+            chmod +x "binaries/$plat/maton"
+            rm -rf "$tmp"
+          }
+
+          extract_windows() {
+            local archive="$1" plat="$2" tmp
+            tmp=$(mktemp -d)
+            unzip -q "$archive" -d "$tmp"
+            mkdir -p "binaries/$plat"
+            cp "$(find "$tmp" -type f -path '*/bin/maton.exe')" "binaries/$plat/maton.exe"
+            rm -rf "$tmp"
+          }
+
+          extract_unix    "dist/maton_${VERSION}_macOS_arm64.zip"    darwin-arm64
+          extract_unix    "dist/maton_${VERSION}_macOS_amd64.zip"    darwin-x64
+          extract_unix    "dist/maton_${VERSION}_linux_amd64.tar.gz" linux-x64
+          extract_unix    "dist/maton_${VERSION}_linux_arm64.tar.gz" linux-arm64
+          extract_unix    "dist/maton_${VERSION}_linux_armv6.tar.gz" linux-arm
+          extract_unix    "dist/maton_${VERSION}_linux_386.tar.gz"   linux-ia32
+
+          # CGO_ENABLED=0 makes the glibc Linux binary work on musl targets too.
+          for arch in x64 arm64 arm ia32; do
+            cp -r "binaries/linux-$arch" "binaries/linux-$arch-musl"
+          done
+
+          extract_windows "dist/maton_${VERSION}_windows_amd64.zip" win32-x64
+          extract_windows "dist/maton_${VERSION}_windows_arm64.zip" win32-arm64
+          extract_windows "dist/maton_${VERSION}_windows_386.zip"   win32-ia32
+      - name: Publish npm packages
+        if: inputs.environment == 'production'
+        env:
+          TAG_NAME: ${{ inputs.tag_name }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          args=(
+            --release-version "${TAG_NAME#v}"
+            --binaries-dir "$GITHUB_WORKSPACE/binaries"
+            --publish
+          )
+          if [[ $TAG_NAME == *-* ]]; then
+            args+=( --tag next )
+          fi
+          src/script/build_npm_package.py "${args[@]}"
       - name: Extract release notes from CHANGELOG.md
         env:
           TAG_NAME: ${{ inputs.tag_name }}
