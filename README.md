@@ -4,19 +4,24 @@
 
 ## Installation
 
-**MacOS/Linux (Recommended):**
+**MacOS/Linux:**
 ```bash
 curl -fsSL https://maton.ai/install.sh | bash
 ```
 
-**Homebrew (MacOS/Linux):**
-```bash
-brew install maton-ai/cli/maton
-```
-
-**Windows (Recommended):**
+**Windows:**
 ```powershell
 irm https://maton.ai/install.ps1 | iex
+```
+
+**NPM:**
+```bash
+npm install -g @maton-ai/cli
+```
+
+**Homebrew:**
+```bash
+brew install maton-ai/cli/maton
 ```
 
 <details>
