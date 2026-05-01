@@ -1,6 +1,7 @@
 # Maton CLI
 
-`maton` is Maton on the command line.
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/maton-ai/cli)
+![Build Status](https://github.com/maton-ai/cli/actions/workflows/deployment.yml/badge.svg)
 
 ## Installation
 
@@ -32,3 +33,22 @@ darwin, linux, and windows on amd64/arm64 (plus 386/armv6 on linux). Each archiv
 extracts to a directory containing `bin/maton`.
 
 </details>
+
+## Usage
+
+Installing the CLI provides access to the `maton` command.
+
+```sh-session
+maton [command]
+
+# Run `--help` for detailed information about CLI commands
+maton [command] help
+```
+
+## Documentation
+
+For a full reference, see the [CLI manual site](https://cli.maton.ai/manual/maton).
+
+## Feedback
+
+Got feedback for us? Please don't hesitate to email us at [support@maton.ai](mailto:support@maton.ai) or join our [Discord channel](https://discord.com/invite/dBfFAcefs2).
