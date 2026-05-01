@@ -87,8 +87,8 @@ jobs:
         run: script/release --local "$TAG_NAME" --platform linux
       - name: Generate web manual pages
         run: |
-          go run ./cmd/gen-docs --website --doc-path dist/manual
-          tar -czvf dist/manual.tar.gz -C dist -- manual
+          go run ./cmd/gen-docs --website --doc-path dist/site/manual
+          tar -czvf dist/site.tar.gz -C dist/site manual
       - uses: actions/upload-artifact@v7
         with:
           name: linux
@@ -237,12 +237,12 @@ jobs:
           GIT_AUTHOR_EMAIL: noreply@maton.ai
           TAG_NAME: ${{ inputs.tag_name }}
         run: |
-          git -C site rm 'manual/maton*.md' 2>/dev/null || true
-          tar -xzvf linux/manual.tar.gz -C site
-          git -C site add 'manual/maton*.md'
-          sed -i.bak -E "s/(assign version = )\".+\"/\1\"${TAG_NAME#v}\"/" site/index.html
-          rm -f site/index.html.bak
-          git -C site add index.html
+          git -C site rm -rqf manual
+          tar -xzvf linux/site.tar.gz -C site
+          git -C site add manual
+          sed -i.bak -E "s/^version: .+/version: ${TAG_NAME#v}/" site/_config.yml
+          rm -f site/_config.yml.bak
+          git -C site add _config.yml
           git -C site diff --quiet --cached || git -C site commit -m "maton ${TAG_NAME#v}"
       - name: Prepare release assets
         env:
