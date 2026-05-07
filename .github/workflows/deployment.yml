@@ -237,7 +237,8 @@ jobs:
           GIT_AUTHOR_EMAIL: noreply@maton.ai
           TAG_NAME: ${{ inputs.tag_name }}
         run: |
-          git -C site rm -rqf manual
+          # Only remove auto-generated pages; keep hand-authored files like manual/index.md.
+          git -C site rm -rqf manual/maton manual/maton.md
           tar -xzvf linux/site.tar.gz -C site
           git -C site add manual
           sed -i.bak -E "s/^version: .+/version: ${TAG_NAME#v}/" site/_config.yml
