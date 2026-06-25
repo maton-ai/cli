@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-06-24
+
+### Added
+
+- Maton: `trigger` commands — `create`, `get`, `list`, `update`, `delete`, plus `event` (with `list`, `watch`, and `--exec` flag with checkpointing) and `destination` (`create`, `list`, `watch`, etc.).
+- `whoami` commands across apps.
+
+### Changed
+
+- Renamed `view` commands to `get` (`view` retained as a backward-compatible alias).
+- `connection create` now takes the app as a positional argument.
+- JSON output fields are now snake_case; connection commands still accept camelCase for backward compatibility.
+
+### Deprecated
+
+- Stripe: `stripe balance` in favor of `stripe balance get`.
+- Linear and Notion: `user me` in favor of `whoami`.
+- YouTube: `--mine` flag on `video`/`search`/`playlist list` commands.
+- Slack: `--me`, `--username`, `--icon-emoji`, and `--reply-broadcast` flags on the `message` command.
+
+### Fixed
+
+- `trigger destination create --method` defaults to POST.
+- `trigger create --destination` now defaults a destination's `method` to POST when omitted, matching `trigger destination create`.
+
 ## [0.1.4] - 2026-05-19
 
 ### Fixed
