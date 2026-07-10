@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2026-07-08
+
+### Added
+
+- Notion: `page_size` defaults to 100 when unset.
+- GitHub: `duplicate` issue state and `duplicate_of` param.
+- Google Ads: optional `--contains-eu-political-advertising` flag; `--bidding-strategy` on `campaign create` (default `MANUAL_CPC`).
+- Trigger: `since_id` param for `event list`.
+- HubSpot: valueless filter operators.
+
+### Changed
+
+- **Breaking:** inline value and from-file flags are now mutually exclusive (e.g. `--body`/`--text-file`); passing both errors instead of silently using one.
+- **Breaking:** Salesforce `record create --all-or-none` with a single record now errors; pass a JSON array to create multiple records.
+- **Breaking:** `--limit 0` / `--page-size 0` are now forwarded as a literal `0` instead of being dropped; for `connection list` this no longer means unlimited.
+- **Breaking:** on `update`/`edit` commands, passing an explicit empty value (e.g. `--body ""`) now clears the field instead of being ignored.
+- Renamed `repo search --topic` to `--topics` and `google-mail --fetch-format` to `--format` (old names kept as hidden aliases).
+- GitHub: `issue close` reason limited to `completed` or `not_planned`.
+- Salesforce: reject empty array for `composite`.
+- Flags: use enum-aware and nil-pointer flag types based on param types.
+
+### Fixed
+
+- Align write payloads with SDK semantics across GitHub, Slack, Jira, HubSpot, Asana, Trello, Linear, Outlook, Notion, and Google apps — forward explicit empty strings and `0`/`false` values instead of dropping them.
+- Google Mail: route ASCII names through `Mailbox.FormatHeader`.
+- Google Calendar: interpolate path IDs raw to match SDKs.
+- Google Drive: suppress permission notification on `--send-notification-email=false`.
+- Google Ads: default empty `--date-range` to `LAST_30_DAYS`.
+- Google Sheets: distinguish unset vs empty `--sheet-title`; default input option to `USER_ENTERED`.
+- Google Tasks: allow `task list --show-completed=false` to hide completed tasks.
+- Jira: omit `comment` `startAt` when unset.
+- Issue/PR search: require a real qualifier flag.
+- GitHub: allow `repo edit --topics ""` to clear topics; cross-repo issue duplicates; resolve `@me` for `pr edit` assignees.
+- Asana: allow `task create` with workspace alone.
+
 ## [0.1.5] - 2026-06-24
 
 ### Added
