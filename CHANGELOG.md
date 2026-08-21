@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-08-21
+
+### Added
+
+- `login --oauth`: sign in through the browser (authorization code + PKCE on a loopback listener) and store a renewable token instead of an API key. Access tokens refresh automatically; with `--interactive` the authorization URL is printed instead of opening a browser.
+- `token`: print a valid access token for the active profile, renewing it first if expired — for programs calling the API directly, e.g. `curl -H "Authorization: Bearer $(maton token)"`. Exits non-zero for API-key profiles.
+- `whoami`: `auth_type` field (`oauth` or `api_key`) in JSON output, and a `Signed in with:` line in text output.
+- `MATON_API_URL` to override the API base URL.
+
+### Changed
+
+- Config, state, and data directories now resolve per-platform: `XDG_STATE_HOME`/`XDG_DATA_HOME` when set, and `%LocalAppData%`/`%AppData%\Maton CLI` on Windows. An existing `~/.config/maton` is still used when present.
+- `logout` revokes OAuth refresh tokens upstream before clearing them locally; revocation failure is a warning, not an error.
+- `login list` combines profile tags, e.g. `* name (active, oauth)`.
+- `whoami`: `api_key` is omitted for OAuth profiles.
+- `login switch` to an OAuth profile now requires a stored session.
+
 ## [0.1.6] - 2026-07-08
 
 ### Added
