@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-08-31
+
+### Added
+
+- `function`: manage serverless functions — `list`, `search`, `get`, `deploy`, `create`, `update`, `delete`, plus `code {get,download}` for a version's source bundle, `version {list,get}`, `env {list,create,update,delete}`, and `run {list,get}` with `run log {list,tail}` for a run's log events. Apart from `deploy`, one command per API operation; path parameters are flags, so sub-resources take `--function <id>`.
+- `function deploy` is the command to reach for when shipping code: `cd my-fn && maton function deploy` creates the function on its first run and publishes a new version on every run after that. It records the function ID in `.maton/state.json` inside the deployed directory, so no ID is ever typed and no name is ever matched against the server — a name is only a URL-slug seed, and renaming reallocates the URL, so a name-keyed upsert could silently retarget the wrong function. The target resolves as `--function` > `MATON_FUNCTION_ID` > the link file > create a new function. The link file is dot-prefixed, so the bundler's existing dot-skip rule keeps it out of every upload; it is per-account, and deploy prints a reminder to gitignore it rather than editing `.gitignore` itself. `--name` and `--runtime` are refused against a linked function, so deploy can never move a live URL or attempt an immutable runtime change.
+- `function create --dir <dir>` bundles a local source tree, inferring the handler and runtime (`main.py` → `main.handler` on `python3.12`, `index.js` → `index.handler` on `nodejs22.x`). A handler is written `<module>.<symbol>` — `main.handler` is `handler` in `main.py` — and the module carries no extension because the runtime supplies it, so `--handler` is not guessable from a file name and is checked locally before upload. Dot-prefixed paths, a default ignore list (`node_modules`, `__pycache__`, `venv`, `env`, `site-packages`, `dist`, `build`, `target`, `vendor`), symlinks, and non-text files are skipped; `--ignore`, `--no-default-ignore`, and `--dry-run` control and preview what is uploaded. `deploy` shares all of it.
+- `function search <query>` carries its own mode syntax: a bare query ranks over names and descriptions, `"…"` greps code as a fixed string, and `/…/` greps it as a regex. Code results render ripgrep-style with `--context` lines.
+- `function code get` returns the presigned envelope (`download_url`, `sha256`, `size`) in one request; `function code download` follows it and writes the tree, sending the presigned hop unauthenticated because S3 rejects a bearer alongside a signature.
+- `function run log list` and `function run log tail` both default to the function's newest run, and both take `--run`/`-r` to name one. `list` takes `--since`/`--until` as RFC3339 or a duration; `tail` polls until the run ends, reading the end from the run's `ended_at` rather than the terminal `REPORT RunId:` line, which a `--filter-pattern` can hide. A failed poll is logged and retried rather than ending the tail — a blip mid-run should not discard a follow that is otherwise working, and a dropped poll never counts toward the two quiet polls that terminate it — with `--exit-status` to make the first one fatal instead, matching `trigger event watch`.
+
+To invoke a function, point `maton api` at its URL: `maton api https://my-fn-3k9xq2v.maton.app`. The handler is called as `handler(event, context)` — the request arrives whole as a Maton event (version 1) with the body as a string on `event.get("body")`, absent when the request carries none, not as arguments bound by name — and the response carries the run's ID in `X-Function-Run-Id`, so `-i` names the run for `function run get` and `function run log list --run`.
+
+`create` and `update` still accept `--dir`/`--file` and remain one-to-one with POST and PATCH, which is what a script wants. `update` also owns the two operations `deploy` deliberately declines: renaming (`--name`) and rolling back (`--version`). `update --handler` on its own takes no files: it republishes the current version's code under a new handler, which is a new version.
+
+### Fixed
+
+- `api`: print the response body when a failing response declares JSON but does not carry it, instead of replacing it with a decoder error. A function whose handler raises answers `500` with the plain body `Internal Server Error` under `content-type: application/json`, so the most common way to see a crash used to report `invalid character 'I' looking for beginning of value` and discard the response entirely. Such a body is now passed through verbatim and left unformatted, `--jq` and `--template` are skipped rather than run against a non-JSON body, and the exit status is unchanged.
+
 ## [0.2.0] - 2026-08-21
 
 ### Added
