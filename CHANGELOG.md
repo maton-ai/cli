@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-09-06
+
+### Added
+
+- `X-Maton-Client-User-Agent` now carries `command`, `flags`, `install_method`, and `credential_source`, and `platform` gained the OS version. `command` is the full command path and `flags` the sorted names of the flags actually passed — names only, never values, so nothing a user typed is sent. `install_method` is inferred from the resolved executable path (`npm`, `homebrew`, `script`, `go`, `package`), with `MATON_MANAGED_BY_NPM`/`MATON_MANAGED_BY_BUN` taking precedence; it is empty rather than guessed when the path matches nothing known. `credential_source` says where the token came from and is resolved per request, so it reports `env` for any `MATON_*` variable instead of naming the variable.
+- OpenClaw is detected as the invoking agent via `OPENCLAW_SHELL`, which it sets on every command spawned by its exec tool. Skills installed from ClawHub run under OpenClaw, so this also identifies ClawHub-distributed traffic.
+
+### Changed
+
+- The client user agent is now built from the factory and encoded per request rather than once at client construction, which is what lets `credential_source` reflect the credential a given request actually used.
+- Go toolchain pinned to 1.27.1.
+
 ## [0.3.0] - 2026-08-31
 
 ### Added
