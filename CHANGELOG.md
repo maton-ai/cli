@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-09-18
+
+### Added
+
+- `login --device`: sign in with the device authorization grant (RFC 8628) on a host with no usable browser, such as a container, an SSH session, or a CI runner. The CLI prints a one-time code and sends you to `https://accounts.maton.ai/device?user_code=<code>`, which signs you in before handing off to the approval page, so the code can be approved from any other device while the CLI polls the token endpoint. It yields the same renewable OAuth token as `--oauth`, so `whoami`, automatic refresh, and `logout` revocation all behave identically.
+- `login --oauth` now falls back to the one-time code flow by itself when no browser can be opened, instead of hanging until its timeout on a callback that this host will never receive. A browser is considered unavailable when `CI` is set, when the session is over SSH with no forwarded display, when a Linux or BSD host has neither `DISPLAY` nor `WAYLAND_DISPLAY`, or when no opener is on `PATH`; `BROWSER` names one explicitly and skips those checks. If the detector is wrong and the launch itself fails, the CLI switches to the one-time code at that point rather than waiting on the callback. The timeout message now also points at `--device`.
+- `login --interactive` now composes with `--device`, so a host that has an opener on `PATH` but no browser worth opening can still take the one-time code without a launch attempt. `--oauth` and `--device` are rejected together instead of silently resolving to `--device`.
+- `login --api-key` runs the paste-an-API-key flow.
+
+### Changed
+
+- **Breaking:** The CLI no longer displays any part of an API key. `whoami` drops the `api_key` field from `--json` and the `API key:` line from its text output, and `login --api-key` no longer echoes the pasted key back. Scripts that read `api_key` to tell how a profile is authenticated should read `auth_type` instead, which is unchanged. The `redacted_api_key` field is also gone from `config.toml`; existing entries are dropped the next time anything writes the file, and no migration is needed.
+- `whoami` now always reports how the profile is authenticated, as `Signed in with: API key` or `Signed in with: OAuth`. Previously the line appeared only for OAuth profiles, with the `API key:` fingerprint implicitly marking the others. Relatedly, `auth_type` now reports `api_key` when `MATON_API_KEY` is set, since that variable overrides the stored credential without moving the active profile pointer; it previously reported the profile's own type while a different key was in use.
+- **Breaking:** `maton login` now signs in through the browser and stores a renewable OAuth token, which is what `maton login --oauth` used to do; `--oauth` still names that flow explicitly. The old default, pasting a long-lived API key, moved to `maton login --api-key`. Existing API key profiles keep working and `MATON_API_KEY` is unaffected; only what a bare `maton login` does has changed.
+
 ## [0.3.1] - 2026-09-06
 
 ### Added
