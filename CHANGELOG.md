@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-09-23
+
+### Added
+
+- Agent detection now falls back to the process ancestry when no known environment variable is set, walking up to 16 parents and matching their executable names (or, for `node`, `bun`, `deno`, `python`, and `ruby`, the script they run) against a fixed list of agent CLIs. Only names on that list are ever reported, so nothing about the user's other processes leaves the machine. Before the ancestry walk, marker files are checked too, starting with Devin's `/opt/.devin`.
+- Newly detected agents: Aider, Augment (Auggie), Bolt, Claude Cowork, Devin, Droid, GitHub Copilot agent mode in VS Code, Jules, Octofriend, Pi, Replit, Warp's Oz agent, Windsurf, and Zed. Existing detections for Amp, Antigravity, Copilot CLI, OpenCode, Cursor, and Claude Code recognise more of the variables those tools set.
+- `X-Maton-Client-User-Agent` now carries `is_tty`, `ci`, and `terminal`. `is_tty` is true only when both stdin and stdout are terminals; `ci` names the CI provider (`github-actions`, `gitlab`, `circleci`, and so on), `unknown` for CI detected only through generic variables, and is omitted outside CI; `terminal` names the terminal emulator or editor from `TERM_PROGRAM`, with Cursor and Windsurf told apart from VS Code by their own variables.
+
+### Changed
+
+- `token` help no longer suggests passing its output to `curl`, and points at `maton api` instead, which attaches the credential itself so the token never lands in shell history, process listings, or logs.
+- The agent is detected once per invocation and shared between telemetry and the client user agent, since the fallback now walks the process tree.
+
 ## [0.3.2] - 2026-09-18
 
 ### Added
@@ -56,7 +69,7 @@ To invoke a function, point `maton api` at its URL: `maton api https://my-fn-3k9
 ### Added
 
 - `login --oauth`: sign in through the browser (authorization code + PKCE on a loopback listener) and store a renewable token instead of an API key. Access tokens refresh automatically; with `--interactive` the authorization URL is printed instead of opening a browser.
-- `token`: print a valid access token for the active profile, renewing it first if expired — for programs calling the API directly, e.g. `curl -H "Authorization: Bearer $(maton token)"`. Exits non-zero for API-key profiles.
+- `token`: print a valid access token for the active profile, renewing it first if expired, for programs calling the API directly. Exits non-zero for API-key profiles.
 - `whoami`: `auth_type` field (`oauth` or `api_key`) in JSON output, and a `Signed in with:` line in text output.
 - `MATON_API_URL` to override the API base URL.
 
