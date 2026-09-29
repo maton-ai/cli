@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.5] - 2026-09-29
+
+### Changed
+
+- **Breaking:** `maton login` now signs in with device authorization, which is what `maton login --device` used to do, and no longer waits for the approval. It prints the code and a link, saves the code under the state directory, and exits 8 to say the sign-in is pending. Approve the code on this or any other device, then run `maton login` again: that run picks up the saved code and exits 0 once it is approved, shows the same code again and exits 8 while it is still pending, and exits 1 if it was denied. A code that expired is replaced with a fresh one in the same run, which exits 8. Exit 0 always means signed in, so a caller, human or agent, can loop on the exit status without holding a terminal open. Device authorization never launches a browser, so it behaves the same on a desktop, over SSH, or in a container. The browser redirect flow that used to be the default is still available as `maton login --oauth`, and it now falls back to device authorization when no browser is available.
+- Pending codes are kept one per API base URL, in a file private to the user, and are only resumed against the client, issuer, and resource that issued them. A code with less than a minute left is replaced rather than resumed. When two runs start a sign-in at once, the first to save its code wins and both print that code.
+- `--interactive` now has no effect with `--device` and prints a warning saying so.
+- The CLI's output and help now call the sign-in flow "device authorization" and the code it shows a "user code", replacing "one-time code".
+- `maton login` no longer refuses to run while `MATON_API_KEY` is set. It signs in and stores the credential as usual; `MATON_API_KEY` still takes precedence over the stored credential for as long as it is set.
+
 ## [0.3.4] - 2026-09-23
 
 ### Changed
