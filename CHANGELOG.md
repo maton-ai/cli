@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-10-02
+
+### Added
+
+- Requests the Maton gateway refuses with its own `429`, such as the per-account limit of 10 requests per second, are now retried automatically, up to three attempts in total. The CLI waits the `Retry-After` the gateway sends, or one second if there is none, and only retries waits of five seconds or less, so a daily quota that resets hours later fails right away instead of hanging the command. A `429` is treated as the gateway's own only when its `Proxy-Status` entry reports an `error`; a `429` relayed from the third-party API (`received-status=429`) is returned unchanged, since whether it is safe to retry depends on the provider. The gateway refuses these requests before calling the provider, so a retried `POST` cannot repeat a side effect. Retries apply to every command that goes through the gateway, including `maton api`.
+
+- `maton` now prints a notice on stderr when a newer release is available, after interactive commands only: `maton`, `maton help`, `maton version`, `maton --version`, `maton login`, `maton logout`, `maton whoami`, and `--help` on any command. The latest release is looked up on GitHub at most once every 24 hours, with a 2 second timeout and a one hour back-off after a failed lookup, and the result is cached in the state directory. The notice is never shown in CI, when an AI agent is driving the CLI, or when stderr is not a terminal. Set `MATON_NO_UPDATE_NOTIFIER` to any value to turn it off.
+
+### Changed
+
+- **Breaking:** `maton login` now signs in through the browser with a verification code. It prints the login link and `maton login --code <CODE>`, then exits 8 to say the sign-in is pending; when stdout is a terminal it also prints `Opening browser to sign in…` and tries to open the link in the browser, on a best-effort basis. After sign-in, the accounts page shows a verification code, and `maton login --code <CODE>` finishes. No run waits for input, so a person, a script, and an AI agent all get the same flow. Each run starts its own sign-in and replaces the previous one, so only the code from the latest link works, for up to 30 minutes. `--code ""` is rejected rather than starting a new sign-in. The code is redeemed at the accounts `/code/redeem` endpoint and exchanged with the run's PKCE verifier, so a code read off the screen is useless without the machine that started the sign-in. Device authorization, which bare `maton login` used to run, is still available as `maton login --device`, and a pending device code is now finished with `maton login --device` too. `--api-key` is unchanged. When `--oauth` finds no browser, or the browser fails to open, it now falls back to the verification-code sign-in instead of device authorization, without trying the browser again. `--device` and `--oauth` are no longer listed in `maton login --help`.
+- `maton login` now warns after signing in when `MATON_API_KEY` is set, since it takes precedence over the stored credential.
+- `maton login` and `maton whoami` now send `X-Maton-Client-User-Agent`, including the command and the names of the flags used (never their values), like every other command.
+- `maton login --help` no longer lists `--interactive`, which still works and still pastes an API key like `maton login --api-key --interactive`.
+- `google-mail message list --hydrate` now fetches at most 5 messages at a time instead of 10. Each metadata fetch takes roughly 100-200 ms, so 10 in flight regularly exceeded the gateway's 10 requests per second.
+- `google-mail message list --hydrate` no longer prints an empty row when a message's metadata cannot be fetched. With `--json`, the entry keeps its `id` and gains an `error` field; in the table, the subject column shows `(not loaded: <error>)`. Either way, a warning on stderr reports how many messages could not be loaded and the first error.
+
+### Fixed
+
+- `outlook message search` no longer wraps a query that is already in double quotes in a second pair. Microsoft Graph rejects a doubled value such as `""invoice""` with a `400`, so a query passed as `'"quarterly report"'` or `'"a" "b"'` used to fail; it is now sent as is. A query without surrounding quotes is still wrapped, and any `"` or `\` inside it is now escaped, so `subject:"weekly update"` and `C:\temp` work instead of failing with a syntax error.
+- `one-drive drive search` now doubles any apostrophe in the query, as Graph requires inside the `search(q='...')` string literal. A query such as `don't` used to fail with a `400`.
+
 ## [0.3.5] - 2026-09-29
 
 ### Changed
