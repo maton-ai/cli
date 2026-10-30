@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-10-30
+
+### Added
+
+- `maton bridge` lets Maton send requests through your network, for app connections such as email whose provider prefers a stable IP address. A bridge is a resource on your account, up to 5 per account. The bridge keeps one outbound WebSocket to the Maton bridge service and connects only to destinations Maton has signed for the account. Traffic stays TLS end to end, so the bridge carries ciphertext only.
+- `maton bridge run` registers a bridge named after the computer on first use and reuses its ID afterwards. The ID is saved per Maton account, so switching profiles or `MATON_API_KEY` runs that account's own bridge rather than replacing another account's. `maton bridge run <bridge-id>` runs an existing bridge instead, such as one moving from another computer; it warns when that bridge is connected elsewhere and takes over only once that connection ends.
+- `maton bridge list`, `get`, `update --name`, and `delete` manage the account's bridges. Select a bridge for a gateway request with the `Maton-Bridge: <bridge_id>` header, or with `maton api --bridge <bridge-id>`.
+- `maton bridge install` starts the bridge at login and restarts it if it fails, without administrator rights: a LaunchAgent on macOS, a systemd user unit on Linux, a Task Scheduler logon task on Windows. It keeps the profile selected at install time. It checks the login with Maton first and shows the account it belongs to. When `MATON_API_KEY` is set, it asks before saving that key for the bridge alone (`--yes` skips the prompt and is required when not running interactively), in the keyring or in a private file when there is no keyring, so no login profile is created or borrowed; `maton bridge uninstall` removes the saved key. `maton bridge install <bridge-id>` runs an existing bridge instead, replacing the saved bridge ID. `maton bridge uninstall` stops it and removes the login service; the bridge stays registered under the same ID until `maton bridge delete`.
+- `maton bridge status` shows whether a bridge is running on this computer, its connection state, its bridge ID, whether it starts at login, and the log location.
+- `maton icloud-mail` and `maton yahoo-mail` read, send, and organise mail over IMAP and SMTP with an app-specific password: `message list`, `get`, `send`, `reply`, `reply-all`, `forward`, `modify` (read, unread, flag, move), `trash`, and `untrash`; `draft create`, `list`, `get`, `send`, and `delete`; `folder list`, `create`, `rename`, and `delete`; `thread get`; and `whoami`. `message list` shows unread mail in INBOX by default and filters by folder, sender, recipient, subject, text, and date (`--all` for read mail too). Writes check that they land on the intended message, `--dry-run` prints the IMAP or SMTP stream instead of running it, special folders such as Sent and Trash can't be renamed or deleted, and `folder list` shows each folder's role.
+- iCloud Mail message IDs are `<folder>/<uid>` and change when a message moves; commands that move a message print its new ID. Sends file a copy in Sent Messages and print its ID. iCloud Mail needs the Maton bridge.
+- Yahoo Mail message IDs are the server's EMAILIDs, which stay the same when a message moves. Commands look for the message in `--folder` (INBOX unless the command says otherwise) and fail if it isn't there. Yahoo files its own copy in Sent, so sends print no ID.
+- `--bridge <bridge-id>` on `icloud-mail` and `yahoo-mail` commands sends their requests through that bridge.
+- `maton outlook thread get` lists every message in a conversation across all folders, oldest first.
+
+### Changed
+
+- `maton connection create` for iCloud Mail and Yahoo Mail now returns once the app password is accepted, instead of waiting for `ACTIVE`. Maton reports these connections as `PENDING` until the mailbox can also send, which can take a few minutes while it checks how to send, or need the Maton bridge, so waiting for `ACTIVE` timed out after 5 minutes on a working password.
+- `maton connection list --json` accepts `status_reason`, for example `bridge_missing`.
+- `maton connection get` shows the status reason on its own line, for example `Reason: bridge_missing`. It no longer prints the connect URL once the password has been submitted. The account column and field now show the mailbox address for iCloud Mail and Yahoo Mail. `--json` accepts `status_reason`.
+
+### Fixed
+
+- `maton google-mail` strips control characters from the subject and threading headers of the messages it sends, so they can't add headers.
+
 ## [0.4.0] - 2026-10-02
 
 ### Added
