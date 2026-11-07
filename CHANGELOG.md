@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-11-07
+
+### Added
+
+- `maton connection reauthorize <id>` reauthorizes a `FAILED` or `PENDING` connection in place, keeping its connection ID, so scripts and settings that use that ID keep working. Like `create`, it opens your browser (or prints the URL with `--interactive`) and waits until the connection is active; for iCloud Mail and Yahoo Mail it returns once the new app password is accepted. Without a terminal it prints the connection with its new connect URL. An `ACTIVE` connection doesn't need reauthorizing and returns an error.
+
+### Fixed
+
+- `maton icloud-mail` and `maton yahoo-mail` without `--connection` no longer report that no connection is set up when the mailbox is still being checked or is waiting for the Maton bridge. They checked for status names the API had already stopped returning, so such a connection was skipped. A ready connection is now preferred over an older one that can't send yet; when none is ready, the command uses the one that is waiting and shows why it can't send yet (for example, that the bridge isn't running).
+
 ## [0.5.0] - 2026-10-30
 
 ### Added
