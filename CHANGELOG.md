@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.0] - 2026-11-26
+
+### Added
+
+- `maton log list` lists recent account logs (gateway, connection, function, trigger), newest first, last 24h by default. Filter with `--level`, `--source`, `--request-id`, `--search`, `--since`, `--until`; `--limit` defaults to 100. `maton log tail` follows new logs until Ctrl-C. Both support `--json`; alias `maton logs`.
+- `maton metric query` aggregates requests or logs (counts, latency percentiles, payload sizes), last hour by default. Use `--aggregation`, `--metric`, `--search`, `--since`, `--until`, `--group-by` (top 10 per facet; see `--limit`, `--order`), and `--interval` (e.g. `5m`) for a time series. `--input` sends a full request body for multiple queries and formulas, such as an error rate. `--json` prints rows as objects keyed by column name. `--jq` and `--template` keep numbers exact. Alias `maton metrics`.
+- `maton request list` lists recent API requests, newest first, last 24h by default. Filter with `--app`, `--source`, `--connection`, `--method`, `--status` (`500`, `5xx`, `">=400"`), `--search`, `--since`, `--until`; `--limit` defaults to 30. `maton request get <request-id>` shows one request in full. `maton request query` runs a read-only SQL SELECT on the `requests` table, with `--param name=value` and `--file`. All support `--json`, and `--jq`/`--template` keep numbers exact on `query`. Alias `maton requests`.
+- `maton context graphql` (alias `gql`) runs a GraphQL query or mutation over objects Maton has observed in your connected apps, and prints the data as JSON. Pass GraphQL as an argument or `--file`; set variables with `--variable name=value` or `--variables`; `--paginate` fetches all pages for queries accepting `$endCursor`, following the `pageInfo` of the one field `$endCursor` is passed to, so a nested collection's `pageInfo` never supplies the cursor. GraphQL errors go to stderr with non-zero exit. Supports `--json` with `--jq` and `--template`.
+- `maton connection create <app> --scopes <scope>,...` requests only the chosen OAuth scopes, for apps that offer a choice (the app's required scopes are always added; without `--scopes` the app's defaults are requested). `--access-policy '<json>'`, or `-F/--access-policy-file <file>` (`-` for stdin), limits which endpoints the connection may call through Maton.
+- `maton connection update <id>` replaces a connection's access policy, given as JSON with `--access-policy` or from a file with `-F/--access-policy-file` (`-` for stdin); `null` removes every restriction, as in the API. The two flags are mutually exclusive. The change applies immediately; it asks for confirmation unless `--yes` is given, which is required when not running interactively.
+- `maton connection get` shows the scopes a connection was granted and its access (`full`, or `restricted` with the number of allow and deny rules). `maton connection list` has an `ACCESS` column. `--json` accepts `granted_scopes` and `access_policy`.
+
+### Changed
+
+- `maton connection reauthorize <id> --scopes <scope>,...` changes the scopes of an `ACTIVE` connection. It opens the connect page and waits until you approve; the connection keeps working with its current permissions until then. Without `--scopes`, an `ACTIVE` connection still doesn't need reauthorizing.
+
+### Fixed
+
+- `maton api --input -` sends the request body with a `Content-Length`, as `--input <file>` already did. A body streamed from stdin had none, so a connection whose access policy depends on the body (a GraphQL query-only rule) could refuse it at random.
+
 ## [0.6.0] - 2026-11-07
 
 ### Added
